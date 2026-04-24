@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # 1. The Database Service
+  mongodb:
+    image: mongo:latest
+    container_name: wallet-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - wallet-network
+
+  # 2. The Backend Service
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: wallet-backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - mongodb
+    networks:
+      - wallet-network
+
+  # 3. The Frontend Service (NEW)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: wallet-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      # CRITICAL: React runs in your browser, so it still needs to look at localhost to find the backend!
+      - REACT_APP_API_URL=http://localhost:5000/api
+    depends_on:
+      - backend
+    networks:
+      - wallet-network
+
+networks:
+  wallet-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
